@@ -94,8 +94,8 @@ docker compose -f docker-compose-hyperhx.yml up -d
 docker compose -f docker-compose-grafana.yml up -d
 ```
 
-- The UI will be available at [http://localhost:8126](http://localhost:8126) (or as configured).
-- The API will be available at [http://localhost:8125](http://localhost:8125).
+- The UI will be available at [http://localhost:8080](http://localhost:8080) (or as configured).
+- The API will be available at [http://localhost:8000](http://localhost:8000).
 - OpenTelemetry endpoints: `http://localhost:4318` (HTTP), `localhost:4317` (gRPC).
 
 To stop and remove containers:
