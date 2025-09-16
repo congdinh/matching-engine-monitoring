@@ -1,0 +1,17 @@
+services:
+  db:
+    image: mongo:5.0.14-focal
+    container_name: db
+    # WARNING: Exposing the database port will make it accessible from outside the container,
+    # potentially allowing unauthorized access. If you uncomment the ports below,
+    # ensure to secure your database (e.g., with strong authentication, proper network rules, and firewalls).
+    # ports:
+    #   - 27017:27017
+    volumes:
+      - .volumes/db:/data/db
+    networks:
+      - external
+
+networks:
+  external:
+    name: trading_network

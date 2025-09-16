@@ -1,0 +1,92 @@
+# Create a kafka single node with 1 broker and 1 controller
+# Create a data-kafka directory and set the owner to 1001:1001 first
+# mkdir -p ./volumes/data-kafka && chown -R 1001:1001 ./volumes/data-kafka
+# Then run the docker-compose.yml file: docker compose -f docker-compose-kafka.yml up -d
+
+version: '3.8'
+
+services:
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka
+    restart: always
+    ports:
+      - '9094:9094'
+      # - '9999:9999' # JMX Exporter
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@127.0.0.1:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://${KAFKA_EXTERNAL_IP:-localhost}:9094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      # default partitions/topics
+      - KAFKA_CFG_NUM_PARTITIONS=1 # Default 1 partition
+      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=1 # Default 1 replicas
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1 # Default 1 replicas
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1 # Default 1 replicas
+
+      # retention & segment
+      - KAFKA_CFG_LOG_RETENTION_MS=86400000 # 1 day
+      - KAFKA_CFG_LOG_SEGMENT_BYTES=104857600 # 100MB
+
+      # KRaft cluster-id (shared)
+      - KAFKA_KRAFT_CLUSTER_ID=r4zt_wrqTRuT7W2NJsB_GA
+
+      # - BITNAMI_DEBUG=yes
+
+      # JMX Exporter
+      # - KAFKA_OPTS=-javaagent:/opt/jmx/jmx_prometheus_javaagent-0.20.0.jar=9999:/opt/jmx/kafka.yml
+
+    networks:
+      - external
+    volumes:
+      - data-kafka-single:/bitnami/kafka
+      # JMX Exporter
+      # - ./data-kafka-single/jmx_exporter:/opt/jmx
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '10'
+        compress: 'true'
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    restart: always
+    ports:
+      - '9080:8080'
+    environment:
+      - DYNAMIC_CONFIG_ENABLED=true
+      # - LOGGING_LEVEL_ROOT=DEBUG
+      - KAFKA_CLUSTERS_0_NAME=Kafka_Cluster
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_AUDIT_TOPICAUDITENABLED=true
+      - KAFKA_CLUSTERS_0_AUDIT_CONSOLEAUDITENABLED=true
+      # - AUTH_TYPE=LOGIN_FORM
+      # - SPRING_SECURITY_USER_NAME=${KAFKA_UI_USER:-admin}
+      # - SPRING_SECURITY_USER_PASSWORD=${KAFKA_UI_PASSWORD:-admin}
+      - SERVER_SERVLET_CONTEXT_PATH=${KAFKA_UI_PREFIX:-/kafkaui}
+    networks:
+      - external
+    depends_on:
+      - kafka
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '10'
+        compress: 'true'
+
+volumes:
+  data-kafka-single:
+
+networks:
+  external:
+    name: trading_network
